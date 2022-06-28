@@ -2,11 +2,11 @@ import crypto from "crypto";
 
 export class EncryptedField {
     private key: Buffer;
-    private Sequelize: any;
     private _algorithm: string;
-    private _iv_length: any;
+    private _iv_length: number;
     private encrypted_field_name: undefined;
-    constructor(Sequelize, key, opt?) {
+    private Sequelize: any;
+    constructor(Sequelize, key: string, opt?) {
         if (!(this instanceof EncryptedField)) {
             return new EncryptedField(Sequelize, key, opt);
         }
@@ -30,7 +30,7 @@ export class EncryptedField {
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const self = this;
         return {
-            type: this.Sequelize.BLOB,
+            type: self.Sequelize.BLOB,
             get: function() {
                 let previous = this.getDataValue(fieldName);
                 if (!previous) {
@@ -58,6 +58,7 @@ export class EncryptedField {
             }
         }
     };
+
     field(name, config?) {
         config = config || {};
         config.validate = config.validate || {};
