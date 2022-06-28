@@ -1,1 +1,1 @@
-export * from './encrypted-field'
+export * from './lib/encrypted-field'

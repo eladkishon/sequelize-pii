@@ -1,18 +1,18 @@
 import crypto from "crypto";
 
+import {DataTypes} from "sequelize";
+
 export class EncryptedField {
     private key: Buffer;
     private _algorithm: string;
     private _iv_length: number;
     private encrypted_field_name: undefined;
-    private Sequelize: any;
-    constructor(Sequelize, key: string, opt?) {
+    constructor(key: string, opt?) {
         if (!(this instanceof EncryptedField)) {
-            return new EncryptedField(Sequelize, key, opt);
+            return new EncryptedField(key, opt);
         }
 
         this.key = new Buffer(key, 'hex');
-        this.Sequelize = Sequelize;
 
         opt = opt || {};
         this._algorithm = opt.algorithm || 'aes-256-cbc';
@@ -30,7 +30,7 @@ export class EncryptedField {
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const self = this;
         return {
-            type: self.Sequelize.BLOB,
+            type: DataTypes.BLOB,
             get: function() {
                 let previous = this.getDataValue(fieldName);
                 if (!previous) {
@@ -72,14 +72,14 @@ export class EncryptedField {
         const encrypted_field_name = this.encrypted_field_name;
 
         return {
-            type: this.Sequelize.VIRTUAL(config.type || null),
+            type: DataTypes.VIRTUAL(config.type || null),
             set: function set_encrypted(val) {
 
                 if (hasValidations) {
                     this.setDataValue(name, val);
                 }
 
-                // use `this` not this because we need to reference the sequelize instance
+                // use `this` not this because we need to reference to sequelize instance
                 // not our EncryptedField instance
                 const encrypted = this[encrypted_field_name];
 
