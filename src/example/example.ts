@@ -16,7 +16,6 @@ async function main() {
         },
         status: '',
         metrics: '',
-        // search_terms: ''
     })
 
     const customer = await Customer.findOne({where: {customer_id: createdCustomer.customer_id}})

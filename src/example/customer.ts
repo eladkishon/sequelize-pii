@@ -3,7 +3,6 @@ import {DataTypes, UUID} from "sequelize";
 
 import {PersonalDataModel, PersonalDataProtector} from "../lib/personal-data-model";
 
-
 export class Customer
     extends PersonalDataModel<InferAttributes<Customer>, InferCreationAttributes<Customer>> {
     declare id: number;
@@ -25,16 +24,13 @@ export class Customer
 const key = 'ac10ab87d48fec5d0a95d2fa341fa9d93ed632c6c5e4c472cf80c865bf04bf8d'
 
 
-const personalDataProtector = new PersonalDataProtector<Customer>(['profile'], key )
-
-
+const personalDataProtector = new PersonalDataProtector<Customer, 'profile'>(['profile'], key, {enableSearch: true});
 
 
 export default function (sequelize: Sequelize) {
     Customer.init(
-        personalDataProtector.addProtectedAttributes(
+        personalDataProtector.addInitProtectedInitAttributes(
         {
-
             id: {
                 type: DataTypes.INTEGER,
                 primaryKey: true,
@@ -50,8 +46,13 @@ export default function (sequelize: Sequelize) {
                 unique: true,
             },
             metrics: DataTypes.JSON,
+
+            login_email: DataTypes.STRING,
+            loyalty_card_id: DataTypes.STRING,
+            shop_url: DataTypes.STRING,
+            status: DataTypes.STRING
         }),
-        {
+        personalDataProtector.addProtectionInitOptions({
             sequelize: sequelize,
             tableName: 'customers',
             underscored: true,
@@ -60,15 +61,9 @@ export default function (sequelize: Sequelize) {
             createdAt: 'created_at',
             updatedAt: 'updated_at',
             deletedAt: 'deleted_at',
-            indexes: [
-                // full text index on search_terms
-                {
-                    fields: ['search_terms'],
-                    type: 'FULLTEXT',
-                }
-            ],
-        }
+        })
     );
+
 
 
     return Customer;

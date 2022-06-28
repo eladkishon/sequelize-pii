@@ -1,20 +1,23 @@
-import {DataTypes, Model, ModelAttributes} from "sequelize";
+import {DataTypes, InferAttributes, Model, ModelAttributes} from "sequelize";
+import {InitOptions} from "sequelize/types/model";
 
 import {EncryptedField} from './encrypted-field';
 
-export class PersonalDataProtector<M extends Model> {
+type PersonalDataProtectorOptions = {enableSearch: boolean}
+
+export class PersonalDataProtector<M extends Model, K extends keyof M> {
     private protected_fields: Array<string>;
     private encryptedField: EncryptedField;
-    private readonly options = {enableSearch: true}
+    private readonly options:PersonalDataProtectorOptions  = {enableSearch: true}
 
-    constructor(keys: Array<keyof M>, key, options? ) {
+    constructor(keys: Array<K>, key, options?:PersonalDataProtectorOptions) {
         this.encryptedField = new EncryptedField(key);
         this.protected_fields = keys as Array<string>;
         this.options = Object.assign(this.options, options);
     }
 
-    addProtectedAttributes(attributes: ModelAttributes<M>): ModelAttributes<M> {
-        const protectedAttributes : Partial<ModelAttributes<M>> = {
+    addInitProtectedInitAttributes(attributes: Omit<ModelAttributes<M, InferAttributes<M>>, K>): ModelAttributes<M, InferAttributes<M>> {
+        const protectedAttributes: Partial<ModelAttributes<M>> = {
             pii_encrypted: this.encryptedField.vault('pii_encrypted'),
         }
         if (this.options.enableSearch) {
@@ -26,13 +29,23 @@ export class PersonalDataProtector<M extends Model> {
             acc[key] = this.encryptedField.field(key);
             return acc
         }, protectedAttributes)
-        return {...attributes, ...protectedAttributes}
+        return Object.assign(attributes, protectedAttributes) as ModelAttributes<M, InferAttributes<M>>
     }
-    addProtectionOptions(){
 
+    addProtectionInitOptions(initOptions: InitOptions<M>): InitOptions<M> {
+        const protectedInitOptions: { indexes?: Array<unknown> } = {}
+        if (this.options.enableSearch) {
+            protectedInitOptions.indexes = protectedInitOptions.indexes || []
+            protectedInitOptions.indexes.push({
+                fields: ['search_terms'],
+                type: 'FULLTEXT',
+            })
+
+        }
+        return Object.assign(initOptions, protectedInitOptions)
     }
 }
 
-export abstract class PersonalDataModel<TModelAttributes, TCreationAttributes> extends Model<TModelAttributes, TCreationAttributes>{
+export abstract class PersonalDataModel<TModelAttributes, TCreationAttributes> extends Model<TModelAttributes, TCreationAttributes> {
     protected pii_encrypted: Buffer
 }
