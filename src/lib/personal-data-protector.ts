@@ -1,18 +1,25 @@
 import {DataTypes, InferAttributes, Model, ModelAttributes} from "sequelize";
 import {InitOptions} from "sequelize/types/model";
 
-import {EncryptedField} from "./encrypted-field";
+import {EncryptedField, EncryptedFieldSearchOptions} from "./encrypted-field";
 
-type PersonalDataProtectorOptions = {enableSearch: boolean}
+type PersonalDataProtectorOptions = { enableSearch: boolean, searchableKeysPaths: Array<string> }
 
 // TODO: implement hash in search terms and use CONSTANTS
 export class PersonalDataProtector<M extends Model, K extends keyof M> {
     private protected_fields: Array<string>;
     private encryptedField: EncryptedField;
-    private readonly options:PersonalDataProtectorOptions  = {enableSearch: true}
+    private readonly options: PersonalDataProtectorOptions = {enableSearch: false, searchableKeysPaths: []}
 
-    constructor(keys: Array<K>, key, options?:PersonalDataProtectorOptions) {
-        this.encryptedField = new EncryptedField(key);
+    constructor(keys: Array<K>, key, options?: PersonalDataProtectorOptions) {
+        this.encryptedField = new EncryptedField(key,
+            {
+                searchOptions: {
+                    searchableKeysPaths: options.searchableKeysPaths,
+                    enabled: options.enableSearch,
+                    fullTextIndexFieldName: 'search_terms'
+                } as EncryptedFieldSearchOptions
+            })
         this.protected_fields = keys as Array<string>;
         this.options = Object.assign(this.options, options);
     }

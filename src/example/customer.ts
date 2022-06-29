@@ -9,11 +9,11 @@ export class Customer extends PersonalDataModel<InferAttributes<Customer>, Infer
     declare id: number;
     declare customer_id: string;
     declare shop_url: string;
-    @PIIField
+    @PIIField({searchable: true})
     declare login_email: string;
     declare platform_customer_id: string;
     declare loyalty_card_id: string;
-    @PIIField
+    @PIIField({searchable: ['first_name']})
     declare profile: {
         first_name: string;
         last_name: string;

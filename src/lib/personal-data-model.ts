@@ -11,6 +11,7 @@ interface PIIInternalClassOptions {
     encryptionKey: string;
     enableSearch: boolean;
     protectedKeys: Array<string>;
+    searchableKeysPaths: Array<string>;
 }
 
 interface PIIClassConfig {
@@ -18,15 +19,38 @@ interface PIIClassConfig {
     enableSearch: boolean;
 }
 
-export function PIIField(object, member) {
-    const piiInternalClassOptions = (object.constructor.piiInternalClassOptions || {protectedKeys: []} as PIIInternalClassOptions ) ;
-    piiInternalClassOptions.protectedKeys.push(member);
-    object.constructor.piiInternalClassOptions = piiInternalClassOptions;
+interface PIIFieldConfig {
+    searchable?: boolean | Array<string>;
 }
+
+
+const defaultPIIInternalClassOptions: PIIInternalClassOptions = {
+    enableSearch: false,
+    encryptionKey: "",
+    protectedKeys: [],
+    searchableKeysPaths: []
+}
+
+export function PIIField(config: PIIFieldConfig = {}) {
+    return (object, member) => {
+        const piiInternalClassOptions: PIIInternalClassOptions = object.constructor.piiInternalClassOptions || defaultPIIInternalClassOptions;
+
+        // If model field is an object searchable should be list of paths to searchable fields
+        if (Array.isArray(config.searchable)) {
+            piiInternalClassOptions.searchableKeysPaths.push(...config.searchable.map(key => `${member}.${key}`))
+        }
+        if (config.searchable === true) {
+            piiInternalClassOptions.searchableKeysPaths.push(`${member}`)
+        }
+        piiInternalClassOptions.protectedKeys.push(member);
+        object.constructor.piiInternalClassOptions = piiInternalClassOptions;
+    }
+}
+
 
 export function PIIClass(config: PIIClassConfig) {
     return (constructor) => {
-        const piiInternalClassOptions = (constructor.piiInternalClassOptions || {protectedKeys: []} as PIIInternalClassOptions ) ;
+        const piiInternalClassOptions: PIIInternalClassOptions = constructor.piiInternalClassOptions || defaultPIIInternalClassOptions;
         piiInternalClassOptions.encryptionKey = config.encryptionKey;
         piiInternalClassOptions.enableSearch = config.enableSearch;
         constructor.piiInternalClassOptions = piiInternalClassOptions;
@@ -42,9 +66,14 @@ export abstract class PersonalDataModel<TModelAttributes, TCreationAttributes> e
         attributes: Partial<ModelAttributes<M, InferAttributes<M>>>,
         options: InitOptions<M>
     ): MS {
-        const staticThis = this as unknown as {piiInternalClassOptions: PIIInternalClassOptions};
+        const staticThis = this as unknown as { piiInternalClassOptions: PIIInternalClassOptions };
         const piiInternalClassOptions = staticThis.piiInternalClassOptions;
-        const personalDataProtector = new PersonalDataProtector(piiInternalClassOptions.protectedKeys as never , piiInternalClassOptions.encryptionKey,{enableSearch: piiInternalClassOptions.enableSearch});
+        const personalDataProtector = new PersonalDataProtector(piiInternalClassOptions.protectedKeys as never,
+            piiInternalClassOptions.encryptionKey,
+            {
+                enableSearch: piiInternalClassOptions.enableSearch,
+                searchableKeysPaths: piiInternalClassOptions.searchableKeysPaths
+            })
         return modelInitRef.call(this, personalDataProtector.addProtectedInitAttributes(attributes), personalDataProtector.addProtectionInitOptions(options))
     }
 }
