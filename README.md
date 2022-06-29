@@ -31,5 +31,52 @@ npm install sequelize-pii
 <!-- USAGE EXAMPLES -->
 ## Usage
 
+```ts
+@PIIClass({enableSearch: true, encryptionKey: PII_KEY})
+export class Customer extends PersonalDataModel<InferAttributes<Customer>, InferCreationAttributes<Customer>> {
+    declare id: number;
+    declare customer_id: string;
+    declare url: string;
+    @PIIField({searchable: true})
+    declare login_email: string;
+    @PIIField({searchable: ['first_name']})
+    declare profile: {
+        first_name: string;
+        last_name: string;
+    };
+    declare status: string;
+}
 
+export default function (sequelize: Sequelize) {
+    Customer.initWithProtection(
+        {
+            id: {
+                type: DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            customer_id: {
+                type: UUID,
+                unique: true,
+                defaultValue: DataTypes.UUIDV4,
+            },
+            url: {
+                type: DataTypes.STRING,
+            },
+            status: DataTypes.STRING,
+        },
+            {
+            sequelize: sequelize,
+            tableName: 'customers',
+            underscored: true,
+            timestamps: true,
+            paranoid: true,
+            createdAt: 'created_at',
+            updatedAt: 'updated_at',
+            deletedAt: 'deleted_at',
+        }
+    );
+    return Customer;
+}
+```
 
