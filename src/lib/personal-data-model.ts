@@ -1,51 +1,34 @@
-import {DataTypes, InferAttributes, Model, ModelAttributes} from "sequelize";
-import {InitOptions} from "sequelize/types/model";
+import {InferAttributes, Model} from "sequelize";
+import {InitOptions, ModelAttributes, ModelStatic} from "sequelize/types/model";
 
-import {EncryptedField} from './encrypted-field';
+import {PersonalDataProtector} from "./personal-data-protector";
+const key = 'ac10ab87d48fec5d0a95d2fa341fa9d93ed632c6c5e4c472cf80c865bf04bf8d'
 
-type PersonalDataProtectorOptions = {enableSearch: boolean}
 
-export class PersonalDataProtector<M extends Model, K extends keyof M> {
-    private protected_fields: Array<string>;
-    private encryptedField: EncryptedField;
-    private readonly options:PersonalDataProtectorOptions  = {enableSearch: true}
+const modelInitRef = Model.init
 
-    constructor(keys: Array<K>, key, options?:PersonalDataProtectorOptions) {
-        this.encryptedField = new EncryptedField(key);
-        this.protected_fields = keys as Array<string>;
-        this.options = Object.assign(this.options, options);
-    }
-
-    addInitProtectedInitAttributes(attributes: Omit<ModelAttributes<M, InferAttributes<M>>, K>): ModelAttributes<M, InferAttributes<M>> {
-        const protectedAttributes: Partial<ModelAttributes<M>> = {
-            pii_encrypted: this.encryptedField.vault('pii_encrypted'),
-        }
-        if (this.options.enableSearch) {
-            protectedAttributes.search_terms = DataTypes.STRING
-        }
-        // create an object with the keys of the protected fields
-        // and the values of the protected fields
-        this.protected_fields.reduce((acc, key) => {
-            acc[key] = this.encryptedField.field(key);
-            return acc
-        }, protectedAttributes)
-        return Object.assign(attributes, protectedAttributes) as ModelAttributes<M, InferAttributes<M>>
-    }
-
-    addProtectionInitOptions(initOptions: InitOptions<M>): InitOptions<M> {
-        const protectedInitOptions: { indexes?: Array<unknown> } = {}
-        if (this.options.enableSearch) {
-            protectedInitOptions.indexes = protectedInitOptions.indexes || []
-            protectedInitOptions.indexes.push({
-                fields: ['search_terms'],
-                type: 'FULLTEXT',
-            })
-
-        }
-        return Object.assign(initOptions, protectedInitOptions)
+export function PIIField(object, member) {
+    object.constructor.protected_keys = object.constructor.protected_keys || [];
+    object.constructor.protected_keys.push(member);
+}
+export function PIIClass(object) {
+    object.constructor.init = (attributes, options) => {
+            const staticThis = this as unknown as {protected_keys}
+            const protected_keys = staticThis.protected_keys || [];
+            const personalDataProtector = new PersonalDataProtector(protected_keys, key, {enableSearch: true});
+            return modelInitRef.call(this, personalDataProtector.addProtectedInitAttributes(attributes), personalDataProtector.addProtectionInitOptions(options))
     }
 }
 
 export abstract class PersonalDataModel<TModelAttributes, TCreationAttributes> extends Model<TModelAttributes, TCreationAttributes> {
+    // TODO: Do we need this ? or just keep for readability ? should we add search_terms here?
     protected pii_encrypted: Buffer
+    public static init<MS extends ModelStatic<Model>, M extends InstanceType<MS>>(
+        this: MS,
+        attributes: ModelAttributes<M, InferAttributes<M, >>,
+        options: InitOptions<M>
+    ): MS {
+        return modelInitRef.call(this, attributes, options)
+    }
 }
+
