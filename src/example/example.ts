@@ -7,15 +7,13 @@ async function main() {
     const Customer = customerBuilder(sequelize)
     await Customer.sync()
     const createdCustomer = await Customer.create({
-        shop_url: 'https://example.com',
+        url: 'https://example.com',
         login_email: 'kjhkjh',
-        loyalty_card_id: '',
         profile: {
             first_name: 'Elad',
             last_name: 'Kishon'
         },
         status: '',
-        metrics: '',
     })
 
     const customer = await Customer.findOne({where: {customer_id: createdCustomer.customer_id}})

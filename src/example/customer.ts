@@ -8,18 +8,15 @@ const PII_KEY = 'ac10ab87d48fec5d0a95d2fa341fa9d93ed632c6c5e4c472cf80c865bf04bf8
 export class Customer extends PersonalDataModel<InferAttributes<Customer>, InferCreationAttributes<Customer>> {
     declare id: number;
     declare customer_id: string;
-    declare shop_url: string;
+    declare url: string;
     @PIIField({searchable: true})
     declare login_email: string;
-    declare platform_customer_id: string;
-    declare loyalty_card_id: string;
     @PIIField({searchable: ['first_name']})
     declare profile: {
         first_name: string;
         last_name: string;
     };
     declare status: string;
-    declare metrics: unknown;
 }
 
 export default function (sequelize: Sequelize) {
@@ -35,15 +32,10 @@ export default function (sequelize: Sequelize) {
                 unique: true,
                 defaultValue: DataTypes.UUIDV4,
             },
-            platform_customer_id: {
+            url: {
                 type: DataTypes.STRING,
-                unique: true,
             },
-            metrics: DataTypes.JSON,
-            loyalty_card_id: DataTypes.STRING,
-            shop_url: DataTypes.STRING,
             status: DataTypes.STRING,
-
         },
             {
             sequelize: sequelize,
