@@ -110,11 +110,9 @@ export class EncryptedField {
                 // HASH FOR SEARCH
                 if (encrypedFieldInstance.searchOptions.enabled) {
                     const hashedWords = encrypedFieldInstance.searchOptions.searchableKeysPaths.map(path => {
-                        // split path by . and get first value
                         const fieldValue = this.get(path.split('.')[0]);
-                        // get inner field by path without first key
-                        // split path by . and get all but first value
                         const innerFieldPath = path.split('.').slice(1).join('.');
+                        // TODO: Actually hash the result
                         return getObjectKeyByPath(fieldValue, innerFieldPath);
                     }).join(' ');
                     this.setDataValue(encrypedFieldInstance.searchOptions.fullTextIndexFieldName, hashedWords);

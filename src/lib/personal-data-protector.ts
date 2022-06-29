@@ -5,7 +5,6 @@ import {EncryptedField, EncryptedFieldSearchOptions} from "./encrypted-field";
 
 type PersonalDataProtectorOptions = { enableSearch: boolean, searchableKeysPaths: Array<string> }
 
-// TODO: implement hash in search terms and use CONSTANTS
 export class PersonalDataProtector<M extends Model, K extends keyof M> {
     private protected_fields: Array<string>;
     private encryptedField: EncryptedField;

@@ -47,8 +47,7 @@ export class Customer extends PersonalDataModel<InferAttributes<Customer>, Infer
     declare status: string;
 }
 
-export default function (sequelize: Sequelize) {
-    Customer.initWithProtection(
+Customer.initWithProtection(
         {
             id: {
                 type: DataTypes.INTEGER,
@@ -67,16 +66,7 @@ export default function (sequelize: Sequelize) {
         },
             {
             sequelize: sequelize,
-            tableName: 'customers',
-            underscored: true,
-            timestamps: true,
-            paranoid: true,
-            createdAt: 'created_at',
-            updatedAt: 'updated_at',
-            deletedAt: 'deleted_at',
-        }
+            }
     );
-    return Customer;
-}
 ```
 
