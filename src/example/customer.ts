@@ -9,6 +9,7 @@ export class Customer extends PersonalDataModel<InferAttributes<Customer>, Infer
     declare id: number;
     declare customer_id: string;
     declare shop_url: string;
+    @PIIField
     declare login_email: string;
     declare platform_customer_id: string;
     declare loyalty_card_id: string;
@@ -39,10 +40,10 @@ export default function (sequelize: Sequelize) {
                 unique: true,
             },
             metrics: DataTypes.JSON,
-            login_email: DataTypes.STRING,
             loyalty_card_id: DataTypes.STRING,
             shop_url: DataTypes.STRING,
-            status: DataTypes.STRING
+            status: DataTypes.STRING,
+
         },
             {
             sequelize: sequelize,
@@ -55,8 +56,5 @@ export default function (sequelize: Sequelize) {
             deletedAt: 'deleted_at',
         }
     );
-
-
-
     return Customer;
 }

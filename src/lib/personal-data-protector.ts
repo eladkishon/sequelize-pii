@@ -5,8 +5,6 @@ import {EncryptedField} from "./encrypted-field";
 
 type PersonalDataProtectorOptions = {enableSearch: boolean}
 
-
-
 // TODO: implement hash in search terms and use CONSTANTS
 export class PersonalDataProtector<M extends Model, K extends keyof M> {
     private protected_fields: Array<string>;
@@ -19,22 +17,22 @@ export class PersonalDataProtector<M extends Model, K extends keyof M> {
         this.options = Object.assign(this.options, options);
     }
 
-
-    // We want to acceot attributes except the ones we protect since these are the attributes this module generates automatically.
+    // We want to accept attributes except the ones we protect since these are the attributes this module generates automatically.
     addProtectedInitAttributes(attributes: Omit<ModelAttributes<M, InferAttributes<M>>, K>): ModelAttributes<M, InferAttributes<M>> {
-        const protectedAttributes: Partial<ModelAttributes<M>> = {
+        const addedAttributes: Partial<ModelAttributes<M>> = {
             pii_encrypted: this.encryptedField.vault('pii_encrypted'),
         }
+
         if (this.options.enableSearch) {
-            protectedAttributes.search_terms = DataTypes.STRING
+            addedAttributes.search_terms = DataTypes.STRING
         }
         // create an object with the keys of the protected fields
         // and the values of the protected fields
         this.protected_fields.reduce((acc, key) => {
             acc[key] = this.encryptedField.field(key);
             return acc
-        }, protectedAttributes)
-        return Object.assign(attributes, protectedAttributes) as ModelAttributes<M, InferAttributes<M>>
+        }, addedAttributes)
+        return Object.assign(attributes, addedAttributes) as ModelAttributes<M, InferAttributes<M>>
     }
 
     addProtectionInitOptions(initOptions: InitOptions<M>): InitOptions<M> {

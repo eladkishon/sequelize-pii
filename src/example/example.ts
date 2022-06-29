@@ -8,7 +8,7 @@ async function main() {
     await Customer.sync()
     const createdCustomer = await Customer.create({
         shop_url: 'https://example.com',
-        login_email: '',
+        login_email: 'kjhkjh',
         loyalty_card_id: '',
         profile: {
             first_name: 'Elad',
@@ -20,6 +20,7 @@ async function main() {
 
     const customer = await Customer.findOne({where: {customer_id: createdCustomer.customer_id}})
     console.log(customer.profile)
+    console.log(customer.login_email)
 }
 
 main().catch(err => {
