@@ -2,33 +2,50 @@ import {InferAttributes, Model} from "sequelize";
 import {InitOptions, ModelAttributes, ModelStatic} from "sequelize/types/model";
 
 import {PersonalDataProtector} from "./personal-data-protector";
-const key = 'ac10ab87d48fec5d0a95d2fa341fa9d93ed632c6c5e4c472cf80c865bf04bf8d'
 
 
 const modelInitRef = Model.init
 
-export function PIIField(object, member) {
-    object.constructor.protected_keys = object.constructor.protected_keys || [];
-    object.constructor.protected_keys.push(member);
+
+interface PIIInternalClassOptions {
+    encryptionKey: string;
+    enableSearch: boolean;
+    protectedKeys: Array<string>;
 }
-export function PIIClass(object) {
-    object.constructor.init = (attributes, options) => {
-            const staticThis = this as unknown as {protected_keys}
-            const protected_keys = staticThis.protected_keys || [];
-            const personalDataProtector = new PersonalDataProtector(protected_keys, key, {enableSearch: true});
-            return modelInitRef.call(this, personalDataProtector.addProtectedInitAttributes(attributes), personalDataProtector.addProtectionInitOptions(options))
+
+interface PIIClassConfig {
+    encryptionKey: string;
+    enableSearch: boolean;
+}
+
+export function PIIField(object, member) {
+    const piiInternalClassOptions = (object.constructor.piiInternalClassOptions || {protectedKeys: []} as PIIInternalClassOptions ) ;
+    piiInternalClassOptions.protectedKeys.push(member);
+    object.constructor.piiInternalClassOptions = piiInternalClassOptions;
+}
+
+export function PIIClass(config: PIIClassConfig) {
+    return (constructor) => {
+        const piiInternalClassOptions = (constructor.piiInternalClassOptions || {protectedKeys: []} as PIIInternalClassOptions ) ;
+        piiInternalClassOptions.encryptionKey = config.encryptionKey;
+        piiInternalClassOptions.enableSearch = config.enableSearch;
+        constructor.piiInternalClassOptions = piiInternalClassOptions;
     }
 }
 
 export abstract class PersonalDataModel<TModelAttributes, TCreationAttributes> extends Model<TModelAttributes, TCreationAttributes> {
     // TODO: Do we need this ? or just keep for readability ? should we add search_terms here?
     protected pii_encrypted: Buffer
-    public static init<MS extends ModelStatic<Model>, M extends InstanceType<MS>>(
+
+    public static initWithProtection<MS extends ModelStatic<Model>, M extends InstanceType<MS>>(
         this: MS,
-        attributes: ModelAttributes<M, InferAttributes<M, >>,
+        attributes: Partial<ModelAttributes<M, InferAttributes<M>>>,
         options: InitOptions<M>
     ): MS {
-        return modelInitRef.call(this, attributes, options)
+        const staticThis = this as unknown as {piiInternalClassOptions: PIIInternalClassOptions};
+        const piiInternalClassOptions = staticThis.piiInternalClassOptions;
+        const personalDataProtector = new PersonalDataProtector(piiInternalClassOptions.protectedKeys as never , piiInternalClassOptions.encryptionKey,{enableSearch: piiInternalClassOptions.enableSearch});
+        return modelInitRef.call(this, personalDataProtector.addProtectedInitAttributes(attributes), personalDataProtector.addProtectionInitOptions(options))
     }
 }
 
