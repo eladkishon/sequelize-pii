@@ -2,11 +2,31 @@ import crypto from "crypto";
 
 import {DataTypes} from "sequelize";
 
+function getObjectKeyByPath(obj: any, path: string): any {
+    if (obj == null || path == null || path.length === 0) {
+        return obj;
+    }
+    const keys = path.split(".");
+    let current = obj;
+    for (const key of keys) {
+        if (current[key]){
+            current = current[key];
+        }
+    }
+    return current;
+}
+
+export interface EncryptedFieldSearchOptions {
+    searchableKeysPaths: Array<string>;
+    enabled: boolean;
+    fullTextIndexFieldName: string;
+}
 export class EncryptedField {
     private key: Buffer;
     private _algorithm: string;
     private _iv_length: number;
     private encrypted_field_name: undefined;
+    private searchOptions: EncryptedFieldSearchOptions;
     constructor(key: string, opt?) {
         if (!(this instanceof EncryptedField)) {
             return new EncryptedField(key, opt);
@@ -17,6 +37,7 @@ export class EncryptedField {
         opt = opt || {};
         this._algorithm = opt.algorithm || 'aes-256-cbc';
         this._iv_length = opt.iv_length || 16;
+        this.searchOptions = opt.searchOptions;
         this.encrypted_field_name = undefined;
     };
 
@@ -68,7 +89,7 @@ export class EncryptedField {
         if (!this.encrypted_field_name) {
             throw new Error('you must initialize the vault field before using encrypted fields');
         }
-
+        const encrypedFieldInstance = this;
         const encrypted_field_name = this.encrypted_field_name;
 
         return {
@@ -79,12 +100,25 @@ export class EncryptedField {
                     this.setDataValue(name, val);
                 }
 
+                // ENCRYPT
                 // use `this` not this because we need to reference to sequelize instance
                 // not our EncryptedField instance
                 const encrypted = this[encrypted_field_name];
-
                 encrypted[name] = val;
                 this[encrypted_field_name] = encrypted;
+
+                // HASH FOR SEARCH
+                if (encrypedFieldInstance.searchOptions.enabled) {
+                    const hashedWords = encrypedFieldInstance.searchOptions.searchableKeysPaths.map(path => {
+                        // split path by . and get first value
+                        const fieldValue = this.get(path.split('.')[0]);
+                        // get inner field by path without first key
+                        // split path by . and get all but first value
+                        const innerFieldPath = path.split('.').slice(1).join('.');
+                        return getObjectKeyByPath(fieldValue, innerFieldPath);
+                    }).join(' ');
+                    this.setDataValue(encrypedFieldInstance.searchOptions.fullTextIndexFieldName, hashedWords);
+                }
             },
             get: function get_encrypted() {
                 const encrypted = this[encrypted_field_name];
