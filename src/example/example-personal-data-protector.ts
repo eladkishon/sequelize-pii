@@ -1,6 +1,8 @@
 import customerBuilder from "./customer";
 import sequelize from "./sequelize";
 
+
+
 async function main() {
     await sequelize.authenticate()
     console.log('Connection has been established successfully.');
