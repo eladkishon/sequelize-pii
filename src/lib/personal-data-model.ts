@@ -5,7 +5,6 @@ import {PersonalDataProtector} from "./personal-data-protector";
 
 export interface PIIProtectedClassConfig {
     encryptionKey: string;
-    enableSearch: boolean;
 }
 
 export interface PIIProtectedFieldConfig {
@@ -47,7 +46,6 @@ export function PIIProtectedClass(config: PIIProtectedClassConfig) {
     return (constructor) => {
         const piiInternalClassOptions: PersonalDataModelInternalClassOptions = constructor.piiInternalClassOptions || defaultPersonalDataModelInternalClassOptions;
         piiInternalClassOptions.encryptionKey = config.encryptionKey;
-        piiInternalClassOptions.enableSearch = config.enableSearch;
         constructor.piiInternalClassOptions = piiInternalClassOptions;
     }
 }
@@ -68,7 +66,6 @@ export abstract class PersonalDataModel<TModelAttributes, TCreationAttributes> e
         const personalDataProtector = new PersonalDataProtector(piiInternalClassOptions.protectedKeys as never,
             piiInternalClassOptions.encryptionKey,
             {
-                enableSearch: piiInternalClassOptions.enableSearch,
                 searchableKeysPaths: piiInternalClassOptions.searchableKeysPaths
             })
         return modelInitRef.call(this, personalDataProtector.addProtectedInitAttributes(attributes), personalDataProtector.addProtectionInitOptions(options))

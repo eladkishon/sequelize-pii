@@ -3,24 +3,27 @@ import {InitOptions} from "sequelize/types/model";
 
 import {EncryptedField, EncryptedFieldSearchOptions} from "./encrypted-field";
 
-type PersonalDataProtectorOptions = { enableSearch: boolean, searchableKeysPaths: Array<string> }
+type PersonalDataProtectorOptions = { searchableKeysPaths?: Array<string> }
 
 export class PersonalDataProtector<M extends Model, K extends keyof M> {
     private protected_fields: Array<string>;
     private encryptedField: EncryptedField;
-    private readonly options: PersonalDataProtectorOptions = {enableSearch: false, searchableKeysPaths: []}
+    private readonly options: PersonalDataProtectorOptions = {searchableKeysPaths: []}
 
     constructor(keys: Array<K>, key, options?: PersonalDataProtectorOptions) {
         this.encryptedField = new EncryptedField(key,
             {
                 searchOptions: {
                     searchableKeysPaths: options.searchableKeysPaths,
-                    enabled: options.enableSearch,
                     fullTextIndexFieldName: 'search_terms'
                 } as EncryptedFieldSearchOptions
             })
         this.protected_fields = keys as Array<string>;
         this.options = Object.assign(this.options, options);
+    }
+
+    private isSearchEnabled(): boolean {
+        return this.options.searchableKeysPaths?.length > 0
     }
 
     // We want to accept attributes except the ones we protect since these are the attributes this module generates automatically.
@@ -29,7 +32,7 @@ export class PersonalDataProtector<M extends Model, K extends keyof M> {
             pii_encrypted: this.encryptedField.vault('pii_encrypted'),
         }
 
-        if (this.options.enableSearch) {
+        if (this.options.searchableKeysPaths?.length) {
             addedAttributes.search_terms = DataTypes.STRING
         }
         // create an object with the keys of the protected fields
@@ -43,7 +46,7 @@ export class PersonalDataProtector<M extends Model, K extends keyof M> {
 
     addProtectionInitOptions(initOptions: InitOptions<M>): InitOptions<M> {
         const protectedInitOptions: { indexes?: Array<unknown> } = {}
-        if (this.options.enableSearch) {
+        if (this.isSearchEnabled()) {
             protectedInitOptions.indexes = protectedInitOptions.indexes || []
             protectedInitOptions.indexes.push({
                 fields: ['search_terms'],

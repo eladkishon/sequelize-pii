@@ -7,7 +7,11 @@
   "module": "build/module/index.js",
   "repository": "https://github.com/eladkishon/sequelize-pii",
   "author": "Elad Kishon",
-  "keywords": ["PII", "sequelize", "encryption"],
+  "keywords": [
+    "PII",
+    "sequelize",
+    "encryption"
+  ],
   "scripts": {
     "start": "run-s build && node build/main/index.js",
     "build": "run-p build:*",
@@ -29,10 +33,12 @@
     "node": ">=10"
   },
   "dependencies": {
+    "ciphersweet-js": "^2.0.5",
     "sequelize": "^6.21.1",
     "ts-transformer-keys": "^0.4.3"
   },
   "devDependencies": {
+    "sodium-native": "^3.3.0",
     "@ava/typescript": "^1.1.1",
     "@istanbuljs/nyc-config-typescript": "^1.0.1",
     "@types/sequelize": "^4.28.13",

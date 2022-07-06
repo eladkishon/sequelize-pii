@@ -4,7 +4,7 @@ import {DataTypes, UUID} from "sequelize";
 import {PersonalDataModel, PIIProtectedClass, PIIProtectedField,} from "../lib/personal-data-model";
 const PII_KEY = 'ac10ab87d48fec5d0a95d2fa341fa9d93ed632c6c5e4c472cf80c865bf04bf8d'
 
-@PIIProtectedClass({enableSearch: true, encryptionKey: PII_KEY})
+@PIIProtectedClass({encryptionKey: PII_KEY})
 export class Customer extends PersonalDataModel<InferAttributes<Customer>, InferCreationAttributes<Customer>> {
     declare id: number;
     declare customer_id: string;
